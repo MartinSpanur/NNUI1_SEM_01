@@ -91,15 +91,15 @@ class MatrixGridGUI(tk.Tk):
 
         self.canvas = tk.Canvas(
             self,
-            background="#D0D0D0",
+            background="#000000",#"#D0D0D0"
             highlightthickness=0,
         )
 
         # The canvas is not packed yet, so the grid is initially invisible.
         self.canvas.bind("<Configure>", self._on_canvas_resize)
 
-        self.canvas.bind("<Button-3>", self._select_start)
-        self.canvas.bind("<Button-1>", self._select_goal)
+        self.canvas.bind("<Button-1>", self._select_start)
+        self.canvas.bind("<Button-3>", self._select_goal)
 
     def set_matrix(self, matrix: np.ndarray) -> None:
         """
@@ -234,7 +234,7 @@ class MatrixGridGUI(tk.Tk):
                     y2,
                     fill=color,
                     outline="#808080",
-                    width=1,
+                    width=0,#1
                 )
 
     def _load_default_image(self) -> None:
