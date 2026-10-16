@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 
 from image_in_out import bmp_to_binary_matrix, matrix_to_bmp
-
+from a_star import AStar
 
 class MatrixGridGUI(tk.Tk):
     """Tkinter GUI for displaying a NumPy matrix as a square-cell grid."""
@@ -28,6 +28,8 @@ class MatrixGridGUI(tk.Tk):
 
         self.start: tuple[int, int] | None = None
         self.goal: tuple[int, int] | None = None
+
+        self.a_star: AStar | None = None
 
         self._create_controls()
         self._create_grid_area()
@@ -65,12 +67,14 @@ class MatrixGridGUI(tk.Tk):
         self.start_button = ttk.Button(
             run_controls,
             text="Start",
+            command=self._run_a_star_full,
         )
         self.start_button.pack(side=tk.LEFT, padx=(0, 4))
 
         self.step_button = ttk.Button(
             run_controls,
             text="Step",
+            command=self._run_a_star_step,
         )
         self.step_button.pack(side=tk.LEFT, padx=(0, 4))
 
@@ -81,6 +85,7 @@ class MatrixGridGUI(tk.Tk):
         )
         self.reset_button.pack(side=tk.LEFT)
 
+    # GRID SECTION
     def _create_grid_area(self) -> None:
         """Create the canvas used for drawing the matrix grid."""
 
@@ -241,6 +246,7 @@ class MatrixGridGUI(tk.Tk):
         except (FileNotFoundError, OSError, ValueError) as error:
             print(f"Could not load Bludiste.bmp: {error}")
 
+    # OPEN/SAVE SECTION
     def _open_bmp(self) -> None:
         image_path = filedialog.askopenfilename(
             title="Open BMP image",
@@ -280,6 +286,7 @@ class MatrixGridGUI(tk.Tk):
         except (OSError, ValueError) as error:
             print(f"Could not save the image: {error}")
 
+    # STAR/GOAL SELECT SECTION
     def _get_clicked_cell(
             self,
             event: tk.Event,
@@ -378,23 +385,51 @@ class MatrixGridGUI(tk.Tk):
         self.draw_grid()
 
     def _reset_all(self, redraw: bool = True) -> None:
-        """Remove the start and goal selections."""
+        """Reset the grid so that only white and black squares remain."""
 
         if self.matrix is not None:
-            if self.start is not None:
-                row, column = self.start
-
-                if self.matrix[row, column] == 3:
-                    self.matrix[row, column] = 0
-
-            if self.goal is not None:
-                row, column = self.goal
-
-                if self.matrix[row, column] == 4:
-                    self.matrix[row, column] = 0
+            self.matrix[~np.isin(self.matrix, [0, 1])] = 0
 
         self.start = None
         self.goal = None
+        self.a_star = None
 
         if redraw and self.matrix is not None:
             self.draw_grid()
+
+    # A* SECTION
+    def _create_a_star(self) -> AStar | None:
+        if (
+                self.matrix is None
+                or self.start is None
+                or self.goal is None
+        ):
+            return None
+
+        self.a_star = AStar(
+            matrix=self.matrix,
+            start=self.start,
+            goal=self.goal,
+        )
+
+        return self.a_star
+
+    def _run_a_star_full(self) -> None:
+        algorithm = self._create_a_star()
+
+        if algorithm is None:
+            return
+
+        self.matrix = algorithm.a_star_full()
+        self.draw_grid()
+
+    def _run_a_star_step(self) -> None:
+        if self.a_star is None:
+            self.a_star = self._create_a_star()
+
+        if self.a_star is None:
+            return
+
+        self.matrix = self.a_star.a_star_step()
+        self.draw_grid()
+
